@@ -1,10 +1,3 @@
-#         Python Stream Deck Library
-#      Released under the MIT license
-#
-#   dean [at] fourwalledcubicle [dot] com
-#         www.fourwalledcubicle.com
-#
-
 import io
 from PIL import Image
 
@@ -34,161 +27,63 @@ def _scale_image(image, image_format, margins=[0, 0, 0, 0], background='black'):
 
 
 def _to_native_format(image, image_format):
-    if image.size != image_format['size']:
-        image.thumbnail(image_format['size'])
-
+    if image_format["format"].lower() != "jpeg" and image_format["format"].lower() != "jpg":
+        raise ValueError(f"no support format: {image_format['format']}. only 'jpeg' 或 'jpg' is supported")
+    
+    _expand = True
+    if image.size[1] == image_format["size"][0] and image.size[0] == image_format["size"][1]:
+        _expand = False
+    
+    # must rotate the picture first then resize the picture
+    if image_format["rotation"] == 90 or image_format["rotation"] == -90:
+        swapped_tuple = (image_format["size"][1], image_format["size"][0])
+        image_format["size"] = swapped_tuple
+    
     if image_format['rotation']:
-        image = image.rotate(image_format['rotation'])
+        image = image.rotate(image_format['rotation'], expand = _expand)
+    
+    if image.size != image_format['size']:
+        image = image.resize(image_format["size"])
 
     if image_format['flip'][0]:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
     if image_format['flip'][1]:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
-
-    # We want a compressed image in a given codec, convert.
-    compressed_image = io.BytesIO()
-    image.save(compressed_image, image_format['format'], quality=100)
-    return compressed_image.getvalue()
-
-
-def create_image(deck, background='black'):
-    """
-    .. deprecated:: 0.9.5
-        Use :func:`~PILHelper.create_key_image` method instead.
-    """
-    return create_key_image(deck, background)
+    
+    image = image.convert('RGB')
+    
+    return image
 
 
-def create_key_image(deck, background='black'):
-    """
-    Creates a new PIL Image with the correct image dimensions for the given
-    StreamDeck device's keys.
-
-    .. seealso:: See :func:`~PILHelper.to_native_key_format` method for converting a
-                 PIL image instance to the native key image format of a given
-                 StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible image for.
-    :param str background: Background color to use, compatible with `PIL.Image.new()`.
-
-    :rtype: PIL.Image
-    :return: Created PIL image
-    """
-    return _create_image(deck.key_image_format(), background)
+def create_image(dock, background='black'):
+    return create_key_image(dock, background)
 
 
-def create_touchscreen_image(deck, background='black'):
-    """
-    Creates a new PIL Image with the correct image dimensions for the given
-    StreamDeck device's touchscreen.
-
-    .. seealso:: See :func:`~PILHelper.to_native_touchscreen_format` method for converting a
-                 PIL image instance to the native touchscreen image format of a given
-                 StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible image for.
-    :param str background: Background color to use, compatible with `PIL.Image.new()`.
-
-    :rtype: PIL.Image
-    :return: Created PIL image
-    """
-    return _create_image(deck.touchscreen_image_format(), background)
+def create_key_image(dock, background='black'):
+    return _create_image(dock.key_image_format(), background)
 
 
-def create_scaled_image(deck, image, margins=[0, 0, 0, 0], background='black'):
-    """
-    .. deprecated:: 0.9.5
-        Use :func:`~PILHelper.create_scaled_key_image` method instead.
-    """
-    return create_scaled_key_image(deck, image, margins, background)
+def create_touchscreen_image(dock, background='black'):
+    return _create_image(dock.touchscreen_image_format(), background)
 
 
-def create_scaled_key_image(deck, image, margins=[0, 0, 0, 0], background='black'):
-    """
-    Creates a new key image that contains a scaled version of a given image,
-    resized to best fit the given StreamDeck device's keys with the given
-    margins around each side.
-
-    The scaled image is centered within the new key image, offset by the given
-    margins. The aspect ratio of the image is preserved.
-
-    .. seealso:: See :func:`~PILHelper.to_native_key_format` method for converting a
-                 PIL image instance to the native key image format of a given
-                 StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible image for.
-    :param Image image: PIL Image object to scale
-    :param list(int): Array of margin pixels in (top, right, bottom, left) order.
-    :param str background: Background color to use, compatible with `PIL.Image.new()`.
-
-    :rtrype: PIL.Image
-    :return: Loaded PIL image scaled and centered
-    """
-    return _scale_image(image, deck.key_image_format(), margins, background)
+def create_scaled_image(dock, image, margins=[0, 0, 0, 0], background='black'):
+    return create_scaled_key_image(dock, image, margins, background)
 
 
-def create_scaled_touchscreen_image(deck, image, margins=[0, 0, 0, 0], background='black'):
-    """
-    Creates a new touchscreen image that contains a scaled version of a given image,
-    resized to best fit the given StreamDeck device's touchscreen with the given
-    margins around each side.
-
-    The scaled image is centered within the new touchscreen image, offset by the given
-    margins. The aspect ratio of the image is preserved.
-
-    .. seealso:: See :func:`~PILHelper.to_native_touchscreen_format` method for converting a
-                 PIL image instance to the native key image format of a given
-                 StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible image for.
-    :param Image image: PIL Image object to scale
-    :param list(int): Array of margin pixels in (top, right, bottom, left) order.
-    :param str background: Background color to use, compatible with `PIL.Image.new()`.
-
-    :rtrype: PIL.Image
-    :return: Loaded PIL image scaled and centered
-    """
-    return _scale_image(image, deck.touchscreen_image_format(), margins, background)
+def create_scaled_key_image(dock, image, margins=[0, 0, 0, 0], background='black'):
+    return _scale_image(image, dock.key_image_format(), margins, background)
 
 
-def to_native_format(deck, image):
-    """
-    .. deprecated:: 0.9.5
-        Use :func:`~PILHelper.to_native_key_format` method instead.
-    """
-    return to_native_key_format(deck, image)
+def create_scaled_touchscreen_image(dock, image, margins=[0, 0, 0, 0], background='black'):
+    return _scale_image(image, dock.touchscreen_image_format(), margins, background)
 
+def to_native_key_format(dock, image):
+    return _to_native_format(image, dock.key_image_format())
 
-def to_native_key_format(deck, image):
-    """
-    Converts a given PIL image to the native key image format for a StreamDeck,
-    suitable for passing to :func:`~StreamDeck.set_key_image`.
+def to_native_seondscreen_format(dock, image):
+    return _to_native_format(image, dock.secondscreen_image_format())
 
-    .. seealso:: See :func:`~PILHelper.create_image` method for creating a PIL
-                 image instance for a given StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible native image for.
-    :param PIL.Image image: PIL Image to convert to the native StreamDeck image format
-
-    :rtype: enumerable()
-    :return: Image converted to the given StreamDeck's native format
-    """
-    return _to_native_format(image, deck.key_image_format())
-
-
-def to_native_touchscreen_format(deck, image):
-    """
-    Converts a given PIL image to the native touchscreen image format for a StreamDeck,
-    suitable for passing to :func:`~StreamDeck.set_touchscreen_image`.
-
-    .. seealso:: See :func:`~PILHelper.create_touchscreen_image` method for creating a PIL
-                 image instance for a given StreamDeck device.
-
-    :param StreamDeck deck: StreamDeck device to generate a compatible native image for.
-    :param PIL.Image image: PIL Image to convert to the native StreamDeck image format
-
-    :rtype: enumerable()
-    :return: Image converted to the given StreamDeck's native touchscreen format
-    """
-    return _to_native_format(image, deck.touchscreen_image_format())
+def to_native_touchscreen_format(dock, image):
+    return _to_native_format(image, dock.touchscreen_image_format())
