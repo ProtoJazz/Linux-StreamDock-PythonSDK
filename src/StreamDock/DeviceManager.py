@@ -1,46 +1,28 @@
-from .Devices.StreamDock293 import StreamDock293
-from .Devices.StreamDock293s import StreamDock293s
-from .ProductIDs import USBVendorIDs, USBProductIDs
-from .Transport.LibUSBHIDAPI import LibUSBHIDAPI
 import pyudev
+# import pywinusb.hid as hid
+
+from .ProductIDs import USBVendorIDs, USBProductIDs, g_products
+from .Transport.LibUSBHIDAPI import LibUSBHIDAPI
 
 class DeviceManager:
-
-
-
     streamdocks = list()
+
     @staticmethod
     def _get_transport(transport):
-
         return LibUSBHIDAPI()
 
     def __init__(self, transport=None):
-
         self.transport = self._get_transport(transport)
 
     def enumerate(self):
-
-
-        products = [
-            (USBVendorIDs.USB_VID_293, USBProductIDs.USB_PID_STREAMDOCK_293, StreamDock293),
-            (USBVendorIDs.USB_VID_293s, USBProductIDs.USB_PID_STREAMDOCK_293s, StreamDock293s),
-        ]
-
-
+        products = g_products
         for vid, pid, class_type in products:
-            found_devices = self.transport.enumerate(vid=vid, pid=pid)
-            self.streamdocks.extend([class_type(self.transport,d) for d in found_devices])
-
+            found_devices = self.transport.enumerate(vid = vid, pid = pid)
+            self.streamdocks.extend(list([class_type(self.transport, d) for d in found_devices]))  
         return self.streamdocks
-    
-
 
     def listen(self):
-
-        products = [
-            (USBVendorIDs.USB_VID_293, USBProductIDs.USB_PID_STREAMDOCK_293, StreamDock293),
-            (USBVendorIDs.USB_VID_293s, USBProductIDs.USB_PID_STREAMDOCK_293s, StreamDock293s),
-        ]
+        products = g_products
 
         context = pyudev.Context()
         monitor = pyudev.Monitor.from_netlink(context)
@@ -51,13 +33,13 @@ class DeviceManager:
         for device in iter(monitor.poll, None):
             if device.action == 'add' or device.action == 'remove':
                 if  device.action == 'add':
-                    
                     if flag1==0:
                         flag1=1
                         vendor_id = device.get('ID_VENDOR_ID')
                         product_id = device.get('ID_MODEL_ID')
                     elif flag1==1:
                         flag1=0
+                        
                         for vid, pid, class_type in products:
                             if int(vendor_id, 16)==vid and int(product_id, 16)==pid:
                                 found_devices = self.transport.enumerate(int(vendor_id, 16), int(product_id, 16))
@@ -65,7 +47,7 @@ class DeviceManager:
                                 for current_device in found_devices:
                                     if device.device_path.find(current_device['path'])!=-1:
                                         self.streamdocks.append(class_type(self.transport,current_device))
-                                        print("创建成功")
+                                        print("创建成功(create successed!)")
                                     
                                 
                 elif  device.action == 'remove':
@@ -75,7 +57,7 @@ class DeviceManager:
                             if device.device_path.find(streamdock.getPath())!=-1:
                                 self.streamdocks.pop(index)
                                 del streamdock
-                                print("删除成功")
+                                print("删除成功(remove successed!)")
                                 break
                             index=index+1
                         flag2=1

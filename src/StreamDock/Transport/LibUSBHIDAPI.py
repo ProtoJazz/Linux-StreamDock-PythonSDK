@@ -1,17 +1,47 @@
 import os
 import ctypes
-import ctypes.util
 import platform
+from ctypes import POINTER, c_void_p, c_char_p, c_int, c_ulong, c_ubyte
 
-arch = platform.architecture()[0]
-# If on ARM architecture
-if 'arm' in platform.system().lower():
-    dll_name = 'libtransport_arm64.so'  # Adjust the library name for ARM
-else:
-    dll_name = 'libtransport.so'
+def getDllName():
+    search_library_names = {
+        "Windows": {
+            "x86_64": ["transport.dll"]
+        },
+        "Linux": {
+            "x86_64": ["libtransport.so"], 
+            "arm64": ["libtransport_arm.so"] 
+        },
+        "Darwin": {
+            "x86_64": ["libtransport_mac.dylib"],
+            "arm64": ["libtransport_mac_arm64.dylib"] 
+        }
+    }
+    platform_name = platform.system()
+    arch_type  = platform.architecture()[0] 
+    machine_type = platform.machine().lower()
+    if platform_name == "Windows":
+        platform_search_library_names = search_library_names["Windows"]["x86_64"][0]
+    elif platform_name == "Linux":
+        if "x86_64" or "amd64" in machine_type:
+            platform_search_library_names = search_library_names["Linux"]["x86_64"][0]
+        elif "arm64" in machine_type:
+            platform_search_library_names = search_library_names["Linux"]["arm64"][0]
+    elif platform_name == "Darwin":
+        if "x86_64" or "amd64" in machine_type:
+            platform_search_library_names = search_library_names["Darwin"]["x86_64"][0]
+        elif "arm64" in machine_type:
+            platform_search_library_names = search_library_names["Darwin"]["arm64"][0]
+    # print(platform_search_library_names)
+    return platform_search_library_names
     
+
+# debug mac arm64
+# dll_name = 'libtransport_mac_arm64.dylib'
+dll_name = getDllName()
+
 dllabspath = os.path.dirname(os.path.abspath(__file__)) + os.path.sep + dll_name
-my_transpoet_lib = ctypes.CDLL(dllabspath)
+my_transport_lib = ctypes.CDLL(dllabspath)
 
 class LibUSBHIDAPI:
 
@@ -35,140 +65,191 @@ class LibUSBHIDAPI:
         ('interface_number', ctypes.c_int),
         ('next', ctypes.POINTER(hid_device_info))
     ]
+    my_transport_lib.TranSport_new.restype = c_void_p
+    my_transport_lib.TranSport_new.argtypes = []
 
+    my_transport_lib.TranSport_destory.restype = None
+    my_transport_lib.TranSport_destory.argtypes = [c_void_p]
 
-    my_transpoet_lib.TranSpoet_open_.restype = ctypes.c_int
-    my_transpoet_lib.TranSpoet_open_.argtypes= [ctypes.c_void_p,ctypes.c_char_p]
+    my_transport_lib.TranSport_open_.restype = c_int
+    my_transport_lib.TranSport_open_.argtypes = [c_void_p, c_char_p]
 
-    my_transpoet_lib.TranSport_new.restype=ctypes.c_void_p
-    my_transpoet_lib.TranSport_new.argtypes=[]
+    my_transport_lib.TranSport_setBrightness.restype = c_int
+    my_transport_lib.TranSport_setBrightness.argtypes = [c_void_p, c_int]
 
-    my_transpoet_lib.TranSpoet_setBrightness.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_setBrightness.argtypes=[ctypes.c_void_p,ctypes.c_int]
-
-    my_transpoet_lib.TranSpoet_enumerate.restype=ctypes.POINTER(hid_device_info)
-    my_transpoet_lib.TranSpoet_enumerate.argtypes=[ctypes.c_void_p,ctypes.c_ushort, ctypes.c_ushort]
-
-    my_transpoet_lib.TranSpoet_getInputReport.restype=ctypes.c_char_p
-    my_transpoet_lib.TranSpoet_getInputReport.argtypes=[ctypes.c_void_p,ctypes.c_int]
-
-    my_transpoet_lib.TranSpoet_read.restype=ctypes.c_char_p
-    my_transpoet_lib.TranSpoet_read.argtypes=[ctypes.c_void_p]
+    my_transport_lib.TranSport_read.restype = c_int
+    my_transport_lib.TranSport_read.argtypes = [c_void_p, POINTER(c_ubyte), c_ulong]
     
-    my_transpoet_lib.TranSpoet_write.restype=ctypes.POINTER(ctypes.c_char)
-    my_transpoet_lib.TranSpoet_write.argtypes=[ctypes.c_void_p,ctypes.POINTER(ctypes.c_char),ctypes.c_size_t]
-    
-    my_transpoet_lib.TranSpoet_freeEnumerate.restype=None
-    my_transpoet_lib.TranSpoet_freeEnumerate.argtypes=[ctypes.c_void_p,ctypes.c_void_p]
-    
-    
-    my_transpoet_lib.TranSpoet_setBrightness.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_setBrightness.argtypes=[ctypes.c_void_p,ctypes.c_int]
-    
-    my_transpoet_lib.TranSpoet_setBackgroundImg.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_setBackgroundImg.argtypes=[ctypes.c_void_p,ctypes.POINTER(ctypes.c_char),ctypes.c_size_t]
-    
-    my_transpoet_lib.TranSpoet_setKeyImg.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_setKeyImg.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.c_int]
+    my_transport_lib.TranSport_read_.restype = POINTER(c_ubyte)
+    my_transport_lib.TranSport_read_.argtypes = [c_void_p, c_ulong]
 
-    my_transpoet_lib.TranSpoet_setKeyImgdata.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_setKeyImgdata.argtypes=[ctypes.c_void_p,ctypes.POINTER(ctypes.c_char),ctypes.c_int,ctypes.c_int,ctypes.c_int]
+    my_transport_lib.TranSport_deleteRead_.restype = None
+    my_transport_lib.TranSport_deleteRead_.argtypes = [c_void_p]
     
-    my_transpoet_lib.TranSpoet_keyClear.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_keyClear.argtypes=[ctypes.c_void_p,ctypes.c_int]
+    my_transport_lib.TranSport_write.restype = c_int
+    my_transport_lib.TranSport_write.argtypes = [c_void_p, POINTER(c_ubyte), c_ulong]
+
+    my_transport_lib.TranSport_getInputReport.restype = POINTER(c_ubyte)
+    my_transport_lib.TranSport_getInputReport.argtypes = [c_void_p, c_int]
+
+    my_transport_lib.TranSport_freeEnumerate.restype = None
+    my_transport_lib.TranSport_freeEnumerate.argtypes = [c_void_p, POINTER(hid_device_info)]
+
+    my_transport_lib.TranSport_enumerate.restype = POINTER(hid_device_info)
+    my_transport_lib.TranSport_enumerate.argtypes = [c_void_p, c_int, c_int]
+
+    my_transport_lib.TranSport_setBackgroundImg.restype = c_int
+    my_transport_lib.TranSport_setBackgroundImg.argtypes = [c_void_p, POINTER(c_ubyte), c_int]
+
+    my_transport_lib.TranSport_setBackgroundImgDualDevice.restype = c_int
+    my_transport_lib.TranSport_setBackgroundImgDualDevice.argtypes = [c_void_p, c_char_p]
+
+    my_transport_lib.TranSport_setKeyImg.restype = c_int
+    my_transport_lib.TranSport_setKeyImg.argtypes = [c_void_p, c_char_p, c_int]
+
+    my_transport_lib.TranSport_setKeyImgDualDevice.restype = c_int
+    my_transport_lib.TranSport_setKeyImgDualDevice.argtypes = [c_void_p, c_char_p, c_int]
+
+    my_transport_lib.TranSport_setKeyImgDataDualDevice.restype = c_int
+    my_transport_lib.TranSport_setKeyImgDataDualDevice.argtypes = [c_void_p, c_char_p, c_int]
+
+    my_transport_lib.TranSport_keyClear.restype = c_int
+    my_transport_lib.TranSport_keyClear.argtypes = [c_void_p, c_int]
+
+    my_transport_lib.TranSport_keyAllClear.restype = c_int
+    my_transport_lib.TranSport_keyAllClear.argtypes = [c_void_p]
+
+    my_transport_lib.TranSport_wakeScreen.restype = c_int
+    my_transport_lib.TranSport_wakeScreen.argtypes = [c_void_p]
+
+    my_transport_lib.TranSport_refresh.restype = c_int
+    my_transport_lib.TranSport_refresh.argtypes = [c_void_p]
+
+    my_transport_lib.TranSport_disconnected.restype = c_int
+    my_transport_lib.TranSport_disconnected.argtypes = [c_void_p]
+
+    my_transport_lib.TranSport_close.restype = None
+    my_transport_lib.TranSport_close.argtypes = [c_void_p]
     
-    my_transpoet_lib.TranSpoet_keyAllClear.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_keyAllClear.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_wakeScreen.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_wakeScreen.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_refresh.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_refresh.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_disconnected.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_disconnected.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_close.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_close.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_screenOff.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_screenOff.argtypes=[ctypes.c_void_p]
-
-    my_transpoet_lib.TranSpoet_screenOn.restype=ctypes.c_int
-    my_transpoet_lib.TranSpoet_screenOn.argtypes=[ctypes.c_void_p]
+    
     def __init__(self):
-        self.transport=my_transpoet_lib.TranSport_new()
-
+        self.transport=my_transport_lib.TranSport_new()
 
     def open(self,path):
-        return my_transpoet_lib.TranSpoet_open_(self.transport,path)
-    
+        return my_transport_lib.TranSport_open_(self.transport,path)
 
     def getInputReport(self,lenth):
-        return my_transpoet_lib.TranSpoet_getInputReport(self.transport,lenth)
-    
+        return my_transport_lib.TranSport_getInputReport(self.transport,lenth)
+        
     def read(self):
-        arr= my_transpoet_lib.TranSpoet_read(self.transport)
+            pass
 
-        return arr
+    def read_(self, lenth):
+        # 调用 C 函数来读取数据
+        MAX_LENGTH = 13
+        result_ptr = my_transport_lib.TranSport_read_(self.transport, MAX_LENGTH)
+        
+        # 如果返回的指针有效
+        if result_ptr and result_ptr is not None and result_ptr != 0:
+            # 使用 ctypes.string_at 读取指定长度的数据
+            result_bytes = ctypes.string_at(result_ptr, MAX_LENGTH)
+            
+            # 检查是否读取到有效数据
+            if len(result_bytes) > 0:
+                # 提取 ACK 和 OK 部分
+                ack_response = result_bytes[:3].decode('utf-8', errors='ignore')  # 提取 ACK
+                ok_response = result_bytes[5:7].decode('utf-8', errors='ignore')  # 提取 OK
+                key = result_bytes[9]  
+                status = result_bytes[10]  
+
+                print(f"Acknowledgement: {ack_response}, OK: {ok_response}, Key: {key}, Status: {status}")
+
+                return result_bytes, ack_response, ok_response, key, status
+            else:
+                print("Received empty data.")
+
+        
+        return None  
+
+    def deleteRead(self):
+        my_transport_lib.TranSport_deleteRead_(self.transport)
 
     def wirte(self,data,lenth):
-        return my_transpoet_lib.TranSpoet_write(self.transport,data,lenth)
+        return my_transport_lib.TranSport_write(self.transport,data,lenth)
     
     def freeEnumerate(self,devs):
-        my_transpoet_lib.TranSpoet_freeEnumerate(self.transport,devs)
+        my_transport_lib.TranSport_freeEnumerate(self.transport,devs)
 
     def enumerate(self,vid,pid):
         
-        vendor_id = vid or 0
-        product_id = pid or 0
+        vendor_id = vid 
+        product_id = pid 
         device_list = []
-        device_enumeration = my_transpoet_lib.TranSpoet_enumerate(self.transport,vendor_id,product_id)
+        device_enumeration = my_transport_lib.TranSport_enumerate(self.transport,vendor_id,product_id)
         if device_enumeration:
             current_device = device_enumeration
             while current_device:
-                device_list.append({
-                    'path': current_device.contents.path.decode('utf-8'),
-                    'vendor_id': current_device.contents.vendor_id,
-                    'product_id': current_device.contents.product_id,
-                })
+                print(f"Path: {current_device.contents.path.decode('utf-8')}")
+                print(f"Vendor ID: {current_device.contents.vendor_id}")
+                print(f"Product ID: {current_device.contents.product_id}")
+                print(f"Serial Number: {current_device.contents.serial_number}")
+                print(f"Manufacturer: {current_device.contents.manufacturer_string}")
+                print(f"Product: {current_device.contents.product_string}")
+                print(f"Usage Page: {current_device.contents.usage_page}")
+                print(f"Usage: {current_device.contents.usage}")
+                print(f"Interface Number: {current_device.contents.interface_number}")
+                print('-' * 20) 
+                if 1:
+                    device_list.append({
+                        'path': current_device.contents.path.decode('utf-8'),
+                        'vendor_id': current_device.contents.vendor_id,
+                        'product_id': current_device.contents.product_id,
+                    })
                 current_device = current_device.contents.next
         self.freeEnumerate(device_enumeration)
         return device_list
 
 
     def setBrightness(self,percent):
-        return my_transpoet_lib.TranSpoet_setBrightness(self.transport,percent)
+        return my_transport_lib.TranSport_setBrightness(self.transport,percent)
     
-    def setBackgroundImg(self,buffer,size):
-        return my_transpoet_lib.TranSpoet_setBackgroundImg(self.transport,buffer,size)
+    def setBackgroundImg(self, buffer, size):
+        return my_transport_lib.TranSport_setBackgroundImg(self.transport, buffer, size)
     
     def setKeyImg(self,path,key):
-        return my_transpoet_lib.TranSpoet_setKeyImg(self.transport,path,key)
+        return my_transport_lib.TranSport_setKeyImg(self.transport,path,key)
         
-    def setKeyImgdata(self,imagedata,key,width,height):
-        return my_transpoet_lib.TranSpoet_setKeyImgdata(self.transport,imagedata,key,width,height)
+    # def setKeyImgData(self,imagedata,key,width,height):
+    #     return my_transport_lib.TranSport_setKeyImgData(self.transport,imagedata,key,width,height)
+
+    def setBackgroundImgDualDevice(self, path):
+        return my_transport_lib.TranSport_setBackgroundImgDualDevice(self.transport, path)
+    
+    def setKeyImgDualDevice(self, path, key):
+        return my_transport_lib.TranSport_setKeyImgDualDevice(self.transport, path, key)
+
+    def setKeyImgDataDualDevice(self, path, key):
+        return my_transport_lib.TranSport_setKeyImgDataDualDevice(self.transport, path, key)
     
     def keyClear(self,index):
-        return my_transpoet_lib.TranSpoet_keyClear(self.transport,index)
+        return my_transport_lib.TranSport_keyClear(self.transport,index)
     
     def keyAllClear(self):
-        return my_transpoet_lib.TranSpoet_keyAllClear(self.transport)
+        return my_transport_lib.TranSport_keyAllClear(self.transport)
     
     def wakeScreen(self):
-        return my_transpoet_lib.TranSpoet_wakeScreen(self.transport)
+        return my_transport_lib.TranSport_wakeScreen(self.transport)
     
     def refresh(self):
-        return my_transpoet_lib.TranSpoet_refresh(self.transport)
+        return my_transport_lib.TranSport_refresh(self.transport)
     
     def disconnected(self):
-        return my_transpoet_lib.TranSpoet_disconnected(self.transport)
+        return my_transport_lib.TranSport_disconnected(self.transport)
     
     def close(self):
-        return my_transpoet_lib.TranSpoet_close(self.transport)
+        return my_transport_lib.TranSport_close(self.transport)
     
-    def screen_Off(self):
-        return my_transpoet_lib.TranSpoet_screenOff(self.transport)
-    def screen_On(self):
-        return my_transpoet_lib.TranSpoet_screenOn(self.transport)
+    # def screen_Off(self):
+    #     return my_transport_lib.TranSport_screenOff(self.transport)
+    # def screen_On(self):
+    #     return my_transport_lib.TranSport_screenOn(self.transport)
