@@ -1,3 +1,34 @@
+Just a quick attempt to get the mirabox n3 running on my linux machine. 
+I'm using a systemd based distro, so just launching it that way. 
+
+It probably needs some way to retry or reload on login still
+
+
+Icons from https://icons8.com
+
+
+
+`nano ~/.config/systemd/user/streamdock-media.service `
+
+```
+[Unit]
+Description=StreamDock Media Controls
+After=default.target
+
+[Service]
+Environment=PYTHONPATH=/home/protojazz/workspace/Linux-StreamDock-PythonSDK/src
+WorkingDirectory=/home/protojazz/workspace/Linux-StreamDock-PythonSDK/src
+ExecStart=/usr/bin/python3 jam.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+
+
+
 ```
 # Linux-x86_64 platform
 ### It is recommended to use Python 3 or above. Test environment: Ubuntu 20.04, Python 3.8.10
