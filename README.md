@@ -13,17 +13,20 @@ Icons from https://icons8.com
 ```
 [Unit]
 Description=StreamDock Media Controls
-After=default.target
+After=gnome-session-manager.target
+PartOf=gnome-session-manager.target
+StartLimitIntervalSec=0
 
 [Service]
 Environment=PYTHONPATH=/home/protojazz/workspace/Linux-StreamDock-PythonSDK/src
 WorkingDirectory=/home/protojazz/workspace/Linux-StreamDock-PythonSDK/src
+ExecStartPre=/bin/sleep 5
 ExecStart=/usr/bin/python3 jam.py
 Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=default.target
+WantedBy=gnome-session-manager.target
 ```
 
 
