@@ -7,7 +7,7 @@ It probably needs some way to retry or reload on login still
 Icons from https://icons8.com
 
 
-
+This service handles login just fine, but needs the 2nd system one for resume after sleep. Probably doesn't need the sleep
 `nano ~/.config/systemd/user/streamdock-media.service `
 
 ```
@@ -27,8 +27,25 @@ RestartSec=5
 
 [Install]
 WantedBy=gnome-session-manager.target
+
 ```
 
+`sudo nano /etc/systemd/system/streamdock-media-resume.service`
+```
+[Unit]
+Description=Restart StreamDock after suspend
+After=suspend.target hibernate.target
+After=graphical.target
+
+[Service]
+Type=oneshot
+User=protojazz
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+ExecStart=/usr/bin/systemctl --user restart streamdock-media.service
+
+[Install]
+WantedBy=suspend.target hibernate.target
+```
 
 ORIGINAL README: 
 
